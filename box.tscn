@@ -1,0 +1,277 @@
+[gd_scene format=3 uid="uid://dhl84iga0daqb"]
+
+[ext_resource type="Script" uid="uid://bnnn1hdveahwe" path="res://addons/DragDrop3D/Draggable.gd" id="1_g2tbl"]
+[ext_resource type="AudioStream" uid="uid://6clsyek5boqk" path="res://sounds/impact1.mp3" id="2_oq5cr"]
+[ext_resource type="Shader" uid="uid://byk3dfkudeyxo" path="res://addons/stylelized-smoke/Smoke_Project/Stylized_Smoke_Shader.gdshader" id="3_3n43a"]
+[ext_resource type="ArrayMesh" uid="uid://c03p1wq8x7grl" path="res://addons/stylelized-smoke/Smoke_Project/Mesh.tres" id="4_jjbh2"]
+[ext_resource type="AudioStream" uid="uid://dd4hwfuvb1xan" path="res://sounds/tick.mp3" id="5_jjbh2"]
+
+[sub_resource type="GDScript" id="GDScript_x0sin"]
+script/source = "extends RigidBody3D
+
+@onready var mesh = $MeshInstance3D
+@onready var sound = $AudioStreamPlayer3D
+@onready var hover = $hover
+@onready var effect = $Smoke
+
+var _camera: Camera3D
+
+var pickup_mouse = null
+var pickup_cube_pos = null
+var distance = null;
+
+@export var spring: int = 10;
+
+var ogcolor = null
+var valid_color = null
+
+var is_valid = false;
+
+var new_material = null
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	_camera = get_viewport().get_camera_3d()
+	new_material = mesh.mesh.material.duplicate()
+	mesh.set_surface_override_material(0, new_material)
+	ogcolor = new_material.albedo_color
+	valid_color = Color(0.751, 0.689, 0.0, 1.0)
+	pass # Replace with function body.
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	pass
+
+func _on_draggable_drag_hover(node: Variant, cast: Variant) -> void:
+	#print(\"drag_hover\")
+	pass # Replace with function body.
+	
+
+func _on_draggable_drag_hover_on(node: Variant) -> void:
+	#print(\"hover_on\")
+	hover.play()
+	if is_valid:
+		new_material.albedo_color = valid_color * 1.2
+	else:
+		new_material.albedo_color = ogcolor * 1.2
+	pass # Replace with function body.
+
+func _on_draggable_drag_hover_off(node: Variant) -> void:
+	#print(\"hover_off\")
+	new_material.albedo_color = ogcolor
+	if is_valid:
+		new_material.albedo_color = valid_color
+	pass # Replace with function body.
+
+
+func _on_draggable_drag_start(node: Variant) -> void:
+	#print(\"drag_start\")
+	
+	var mouse = get_viewport().get_mouse_position()
+	var camera_pos = _camera.project_ray_origin(mouse);
+	var cube_pos = position
+	distance = camera_pos.distance_to(cube_pos);
+	pickup_mouse = mouse
+	pickup_cube_pos = position
+	
+	if is_valid:
+		mesh.mesh.material.albedo_color = valid_color * 1.4
+	else:
+		mesh.mesh.material.albedo_color = ogcolor * 1.4
+	pass
+
+
+func _on_draggable_drag_move(node: Variant, mouse: Variant) -> void:
+	#print(\"moving\")
+	
+	#how far the mouse has moved since pickup
+	var mouse_moved = mouse - pickup_mouse
+	var up = Vector3(0, 1, 0)
+	var mouse_moved_x = mouse_moved.x
+	var mouse_moved_y = mouse_moved.y
+	var cam_rigth_dir = _camera.global_transform.basis.x
+	var sensitivy = 0.05
+
+	# move the target along the camera's right vector (horizontal)
+	# and TRUE world-up (vertical) instead of the camera's own up vector.
+	var new_targer_point = pickup_cube_pos + (cam_rigth_dir * mouse_moved_x * sensitivy) + (up * -mouse_moved_y * sensitivy)
+		
+	#print(mouse_moved)
+	
+	var gap = new_targer_point - position
+	var velocity = gap * spring;
+	linear_velocity = velocity
+	pass # Replace with function body.
+
+
+func _on_draggable_drag_stop(node: Variant) -> void:
+	#print(\"drag_stop\")
+	new_material.albedo_color = ogcolor
+	if is_valid:
+		new_material.albedo_color = valid_color
+	pass # Replace with function body.
+	
+	
+#var origin = camera.project_ray_origin(mouse)
+#var direction =  camera.project_ray_normal(mouse)
+#var target_point = origin + (direction * distance)
+
+#if not current_cast_pos or not current_mouse_pos:
+	#first frame only
+	#current_cast_pos = cast['position'] 
+	#current_mouse_pos = mouse
+#set_position(cast['position'])
+#var moved = mouse - current_mouse_pos
+#print(current_cast_pos, cast['position'], current_mouse_pos, mouse, moved)
+
+
+func _on_body_entered(body: Node) -> void:
+	print(\"on_enter\", body, body.get_children())
+	
+	#if not sound.playing:
+	sound.set_pitch_scale(randf_range(1, 2));
+	sound.set_volume_db(randf_range(-10, -5));
+	sound.play()
+	effect.set_emitting(true)
+	
+	if body.is_in_group(\"beam\"):
+		is_valid = true;
+		new_material.albedo_color = valid_color
+	
+	pass # Replace with function body.
+
+
+func _on_body_exited(body: Node) -> void:
+	print(\"on_exit\", body)
+	if body.is_in_group(\"beam\"):
+		is_valid = false;
+		new_material.albedo_color = ogcolor
+	pass # Replace with function body.
+"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7dm0k"]
+albedo_color = Color(0.93333334, 0.60784316, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_x0sin"]
+lightmap_size_hint = Vector2i(14, 21)
+material = SubResource("StandardMaterial3D_7dm0k")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_x0sin"]
+
+[sub_resource type="Curve" id="Curve_amiuo"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.9073359, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_w48qg"]
+curve = SubResource("Curve_amiuo")
+
+[sub_resource type="Gradient" id="Gradient_wj1a8"]
+offsets = PackedFloat32Array(0.0056497175, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0.24115604, 0.24115604, 0.24115604, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_b66gd"]
+gradient = SubResource("Gradient_wj1a8")
+
+[sub_resource type="Gradient" id="Gradient_3d203"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_bk3la"]
+noise_type = 2
+fractal_type = 0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_b66gd"]
+noise = SubResource("FastNoiseLite_bk3la")
+color_ramp = SubResource("Gradient_3d203")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7jpco"]
+render_priority = 0
+shader = ExtResource("3_3n43a")
+shader_parameter/Color = Color(1, 1, 1, 1)
+shader_parameter/Color_Gradiant = SubResource("GradientTexture1D_b66gd")
+shader_parameter/Vor_Noise = SubResource("NoiseTexture2D_b66gd")
+shader_parameter/Alpha_Curve = SubResource("CurveTexture_w48qg")
+shader_parameter/Fernal_Power = 1.0
+shader_parameter/Vor_Scale = 0.8
+shader_parameter/Vor_Speed = 0.2
+shader_parameter/Emmision_Power = 1.0
+shader_parameter/Alpha_Clip = 0.0
+
+[sub_resource type="Curve" id="Curve_1e45e"]
+_data = [Vector2(0, 0), 0.0, 1.0236398, 0, 0, Vector2(1, 1), 0.97106856, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_acbqd"]
+texture_mode = 1
+curve = SubResource("Curve_1e45e")
+
+[sub_resource type="Curve" id="Curve_gjv1c"]
+_data = [Vector2(0, 0.27411175), 0.0, 0.0, 0, 0, Vector2(0.7670157, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_wxifh"]
+curve = SubResource("Curve_gjv1c")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_pv0pn"]
+particle_flag_rotate_y = true
+emission_shape = 1
+emission_sphere_radius = 0.25
+angle_min = -89.99999
+angle_max = 90.000015
+gravity = Vector3(0.5, 1, 0)
+scale_min = 0.25
+scale_max = 0.25
+scale_curve = SubResource("CurveTexture_wxifh")
+alpha_curve = SubResource("CurveTexture_acbqd")
+hue_variation_min = -2.2351742e-08
+hue_variation_max = 0.019999977
+turbulence_noise_strength = 0.05
+turbulence_noise_scale = 0.1
+collision_mode = 1
+collision_friction = 0.0
+collision_bounce = 0.0
+collision_use_scale = true
+
+[node name="RigidBody3D" type="RigidBody3D" unique_id=268866726 groups=["weights"]]
+transform = Transform3D(0.9463463, -0.06887081, -0.31573018, 0, 0.9770259, -0.21312049, 0.32315436, 0.20168579, 0.92460483, 0, 0, 0)
+gravity_scale = 4.0
+continuous_cd = true
+contact_monitor = true
+max_contacts_reported = 3
+script = SubResource("GDScript_x0sin")
+
+[node name="Draggable" type="Node" parent="." unique_id=378060195]
+script = ExtResource("1_g2tbl")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=758696051]
+mesh = SubResource("BoxMesh_x0sin")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1125787167]
+shape = SubResource("BoxShape3D_x0sin")
+debug_color = Color(0.9624563, 0, 0.50727004, 0.41960785)
+
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="." unique_id=1631871754]
+stream = ExtResource("2_oq5cr")
+volume_db = -5.0
+
+[node name="Smoke" type="GPUParticles3D" parent="." unique_id=2030243635]
+transform = Transform3D(5, 8.940697e-08, 0, 8.940697e-08, 5, -5.9604645e-08, -3.5762787e-07, 3.5762787e-07, 5, -0.13389206, -0.22552857, 0.047281593)
+material_override = SubResource("ShaderMaterial_7jpco")
+cast_shadow = 0
+emitting = false
+amount = 16
+lifetime = 0.3
+one_shot = true
+trail_lifetime = 0.2
+process_material = SubResource("ParticleProcessMaterial_pv0pn")
+draw_pass_1 = ExtResource("4_jjbh2")
+
+[node name="hover" type="AudioStreamPlayer3D" parent="." unique_id=890873909]
+stream = ExtResource("5_jjbh2")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="body_exited" from="." to="." method="_on_body_exited"]
+[connection signal="drag_hover" from="Draggable" to="." method="_on_draggable_drag_hover"]
+[connection signal="drag_hover_off" from="Draggable" to="." method="_on_draggable_drag_hover_off"]
+[connection signal="drag_hover_on" from="Draggable" to="." method="_on_draggable_drag_hover_on"]
+[connection signal="drag_move" from="Draggable" to="." method="_on_draggable_drag_move"]
+[connection signal="drag_start" from="Draggable" to="." method="_on_draggable_drag_start"]
+[connection signal="drag_stop" from="Draggable" to="." method="_on_draggable_drag_stop"]

@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://di32hlhp2wusn"
+path="res://.godot/imported/cargo-container-a.obj-97613cee8d9463f11f5d6f213a9a9d80.mesh"
+
+[deps]
+
+files=["res://.godot/imported/cargo-container-a.obj-97613cee8d9463f11f5d6f213a9a9d80.mesh"]
+
+source_file="res://models/cargo-container-a.obj"
+dest_files=["res://.godot/imported/cargo-container-a.obj-97613cee8d9463f11f5d6f213a9a9d80.mesh", "res://.godot/imported/cargo-container-a.obj-97613cee8d9463f11f5d6f213a9a9d80.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false
